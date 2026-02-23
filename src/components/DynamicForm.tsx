@@ -40,7 +40,8 @@ export default function DynamicForm({
   submitLabel = "Submit",
   submitting = false,
 }: DynamicFormProps) {
-  // Controlled / uncontrolled support.
+
+  // ✅ Controlled / Uncontrolled Support
   const isControlled = values !== undefined && onValuesChange !== undefined;
   const [internalValues, setInternalValues] = useState<FormValues>({});
   const formValues = isControlled ? values! : internalValues;
@@ -56,6 +57,7 @@ export default function DynamicForm({
   const [errors, setErrors] = useState<FormValues>({});
   const [touched, setTouched] = useState<Set<string | number>>(new Set());
 
+  // Validate field
   const validateField = (field: Field, value: string): string | null => {
     if (field.required && (!value || value.trim() === "")) {
       return "This field is required";
@@ -64,33 +66,29 @@ export default function DynamicForm({
     if (!value) return null;
 
     switch (field.type) {
-      case "email": {
+      case "email":
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(value)) return "Please enter a valid email address";
         break;
-      }
 
-      case "phone": {
+      case "phone":
         if (!value.startsWith("+")) return "Please select a country code";
         const allDigits = value.replace(/\D/g, "");
         const countryCodeMatch = value.match(/^\+(\d{1,4})/);
-        if (!countryCodeMatch) {
+        if (!countryCodeMatch)
           return "Please enter a valid phone number with country code";
-        }
         const countryCodeLength = countryCodeMatch[1].length;
         const phoneDigits = allDigits.substring(countryCodeLength);
-        if (phoneDigits.length < 7) {
+        if (phoneDigits.length < 7)
           return "Phone number must have at least 7 digits";
-        }
-        if (allDigits.length < 10) {
+        if (allDigits.length < 10)
           return "Phone number must be at least 10 digits including country code";
-        }
         break;
-      }
 
       case "text":
         if (
-          (field.id === "fullName" || field.id.toString().toLowerCase().includes("name")) &&
+          (field.id === "fullName" ||
+            field.id.toString().toLowerCase().includes("name")) &&
           value.trim().length < 2
         ) {
           return "Name must be at least 2 characters";
@@ -108,18 +106,18 @@ export default function DynamicForm({
         if (field.required && !value) return "Please select an option";
         break;
 
-      case "date": {
+      case "date":
         const selectedDate = new Date(value);
         const today = new Date();
         today.setHours(23, 59, 59, 999);
         if (
-          (field.id === "dateOfBirth" || field.id.toString().toLowerCase().includes("dob")) &&
+          (field.id === "dateOfBirth" ||
+            field.id.toString().toLowerCase().includes("dob")) &&
           selectedDate > today
         ) {
           return "Date of birth cannot be in the future";
         }
         break;
-      }
     }
 
     return null;
@@ -149,13 +147,12 @@ export default function DynamicForm({
     if (field) {
       const error = validateField(field, formValues[id] || "");
       if (error) setErrors((prev) => ({ ...prev, [id]: error }));
-      else {
+      else
         setErrors((prev) => {
           const e = { ...prev };
           delete e[id];
           return e;
         });
-      }
     }
   };
 
@@ -188,10 +185,10 @@ export default function DynamicForm({
 
   const isCountrySelected = () => {
     const countryValue =
-      formValues.country ||
-      formValues.Country ||
-      formValues.countryCode ||
-      formValues.CountryCode;
+      formValues["country"] ||
+      formValues["Country"] ||
+      formValues["countryCode"] ||
+      formValues["CountryCode"];
     return !!(countryValue && countryValue.trim() !== "");
   };
 
@@ -204,16 +201,18 @@ export default function DynamicForm({
           return (
             <div key={field.id} className="w-full">
               {field.arabicLabel ? (
-                <label className="mb-2 flex items-center justify-between text-sm font-semibold text-gray-900">
+                <label className="block text-sm font-semibold text-gray-900 mb-2 flex justify-between items-center">
                   <span>{field.label}</span>
                   <span dir="rtl" className="text-gray-600">
                     {field.arabicLabel}
                   </span>
                 </label>
               ) : (
-                <label className="mb-2 block text-sm font-semibold text-gray-900">
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
                   {field.label}
-                  {field.required && <span className="ml-1 text-red-500">*</span>}
+                  {field.required && (
+                    <span className="text-red-500 ml-1">*</span>
+                  )}
                 </label>
               )}
 
@@ -233,37 +232,57 @@ export default function DynamicForm({
                     ? "!border-red-500"
                     : "!border-gray-300 focus:!border-primary"
                 }`}
-                buttonClass={`!border-2 !rounded-l-lg ${
-                  !countrySelected && field.required ? "!border-red-500" : "!border-gray-300"
-                }`}
+                buttonClass="!border-2 !border-gray-300 !rounded-l-lg"
               />
 
-              {errors[field.id] && <p className="mt-1 text-sm text-red-600">{errors[field.id]}</p>}
+              {errors[field.id] && (
+                <p className="text-red-600 text-sm mt-1">
+                  {errors[field.id]}
+                </p>
+              )}
             </div>
           );
         }
 
-        if (field.type === "text" || field.type === "email" || field.type === "date") {
-          const isDOB = field.id === "dateOfBirth" || field.id.toString().toLowerCase().includes("dob");
-          const maxDate = isDOB ? new Date().toISOString().split("T")[0] : undefined;
+        if (
+          field.type === "text" ||
+          field.type === "email" ||
+          field.type === "date"
+        ) {
+          const isDOB =
+            field.id === "dateOfBirth" ||
+            field.id.toString().toLowerCase().includes("dob");
+          const maxDate = isDOB
+            ? new Date().toISOString().split("T")[0]
+            : undefined;
 
           return (
             <div key={field.id} className="w-full">
-              <label className="mb-2 block text-sm font-semibold text-gray-900">{field.label}</label>
+              <label className="block text-sm font-semibold text-gray-900 mb-2">
+                {field.label}
+              </label>
 
               <input
                 type={field.type}
                 value={formValues[field.id] || ""}
-                onChange={(e) => handleChange(field.id, e.target.value)}
+                onChange={(e) =>
+                  handleChange(field.id, e.target.value)
+                }
                 onBlur={() => handleBlur(field.id)}
                 max={maxDate}
                 required={field.required}
-                className={`w-full rounded-lg border-2 px-4 py-2.5 ${
-                  errors[field.id] ? "border-red-500" : "border-gray-300"
+                className={`w-full px-4 py-2.5 border-2 rounded-lg ${
+                  errors[field.id]
+                    ? "border-red-500"
+                    : "border-gray-300"
                 }`}
               />
 
-              {errors[field.id] && <p className="mt-1 text-sm text-red-600">{errors[field.id]}</p>}
+              {errors[field.id] && (
+                <p className="text-red-600 text-sm mt-1">
+                  {errors[field.id]}
+                </p>
+              )}
             </div>
           );
         }
@@ -271,15 +290,21 @@ export default function DynamicForm({
         if (field.type === "select" && field.options) {
           return (
             <div key={field.id} className="w-full">
-              <label className="mb-2 block text-sm font-semibold text-gray-900">{field.label}</label>
+              <label className="block text-sm font-semibold text-gray-900 mb-2">
+                {field.label}
+              </label>
 
               <select
                 value={formValues[field.id] || ""}
-                onChange={(e) => handleChange(field.id, e.target.value)}
+                onChange={(e) =>
+                  handleChange(field.id, e.target.value)
+                }
                 onBlur={() => handleBlur(field.id)}
                 required={field.required}
-                className={`w-full rounded-lg border-2 px-4 py-2.5 ${
-                  errors[field.id] ? "border-red-500" : "border-gray-300"
+                className={`w-full px-4 py-2.5 border-2 rounded-lg ${
+                  errors[field.id]
+                    ? "border-red-500"
+                    : "border-gray-300"
                 }`}
               >
                 <option value="">Select {field.label}</option>
@@ -290,7 +315,11 @@ export default function DynamicForm({
                 ))}
               </select>
 
-              {errors[field.id] && <p className="mt-1 text-sm text-red-600">{errors[field.id]}</p>}
+              {errors[field.id] && (
+                <p className="text-red-600 text-sm mt-1">
+                  {errors[field.id]}
+                </p>
+              )}
             </div>
           );
         }
@@ -303,8 +332,10 @@ export default function DynamicForm({
           <button
             type="submit"
             disabled={submitting}
-            className={`flex w-full items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-white ${
-              submitting ? "cursor-not-allowed opacity-50" : ""
+            className={`w-full px-4 py-2.5 bg-primary text-white rounded-lg flex items-center justify-center ${
+              submitting
+                ? "opacity-50 cursor-not-allowed"
+                : ""
             }`}
           >
             {submitting ? (
