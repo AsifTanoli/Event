@@ -7,6 +7,7 @@ import React, {
   useCallback,
   useRef,
 } from "react";
+import { getStorageWithExpiry, setStorageWithExpiry } from "../../utils/storageWithExpiry";
 
 interface User {
   id: string;
@@ -117,9 +118,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       setUser(userData);
 
-      localStorage.setItem(
+      setStorageWithExpiry(
         "windows_auth_user",
-        JSON.stringify({
+        {
           username: windowsUser.username,
           domain: windowsUser.domain,
           fullName: data.databaseUser?.fullName || windowsUser.name,
@@ -127,11 +128,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           role: data.databaseUser?.role || null,
           permissions,
           databaseUser: data.databaseUser || null,
-        }),
+        },
       );
 
       if (data.token) {
-        localStorage.setItem("windows_auth_token", data.token);
+        setStorageWithExpiry("windows_auth_token", data.token);
       }
 
       return true;
@@ -181,9 +182,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       setUser(nextUser);
 
-      localStorage.setItem(
+      setStorageWithExpiry(
         "windows_auth_user",
-        JSON.stringify({
+        {
           username: windowsUser.username,
           domain: windowsUser.domain,
           fullName: data.databaseUser?.fullName || windowsUser.name,
@@ -191,11 +192,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           role: data.databaseUser?.role || null,
           permissions,
           databaseUser: data.databaseUser || null,
-        }),
+        },
       );
 
       if (data.token) {
-        localStorage.setItem("windows_auth_token", data.token);
+        setStorageWithExpiry("windows_auth_token", data.token);
       }
     } catch (error: any) {
       console.error("Windows login error:", error);
@@ -215,46 +216,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         let restoredSession = false;
 
-        const windowsUser = localStorage.getItem("windows_auth_user");
-        const windowsToken = localStorage.getItem("windows_auth_token");
+        const windowsUser = getStorageWithExpiry<Record<string, any>>("windows_auth_user");
+        const windowsToken = getStorageWithExpiry<string>("windows_auth_token");
 
         if (windowsUser && (windowsToken || windowsUser)) {
-          try {
-            const userData = JSON.parse(windowsUser);
-            const permissions = parsePermissions(userData.permissions || []);
+          const permissions = parsePermissions(windowsUser.permissions || []);
 
-            setUser({
-              id:
-                userData.databaseUser?.id ||
-                userData.username ||
-                userData.fullName ||
-                userData.id,
-              name: userData.fullName || userData.username || userData.name,
-              email: userData.databaseUser?.email || userData.email || "",
-              role: userData.role || userData.databaseUser?.role || null,
-              permissions,
-              accessType: userData.accessType || "EVENT_ONLY",
-              username: userData.username,
-              domain: userData.domain,
-              fullName: userData.fullName,
-            });
-            restoredSession = true;
-          } catch (parseError) {
-            console.error("Error parsing stored Windows user:", parseError);
-          }
+          setUser({
+            id:
+              windowsUser.databaseUser?.id ||
+              windowsUser.username ||
+              windowsUser.fullName ||
+              windowsUser.id,
+            name: windowsUser.fullName || windowsUser.username || windowsUser.name,
+            email: windowsUser.databaseUser?.email || windowsUser.email || "",
+            role: windowsUser.role || windowsUser.databaseUser?.role || null,
+            permissions,
+            accessType: windowsUser.accessType || "EVENT_ONLY",
+            username: windowsUser.username,
+            domain: windowsUser.domain,
+            fullName: windowsUser.fullName,
+          });
+          restoredSession = true;
         }
 
         if (!restoredSession) {
-          const storedUser = localStorage.getItem("user");
-          const token = localStorage.getItem("auth_token");
+          const storedUser = getStorageWithExpiry<User>("user");
+          const token = getStorageWithExpiry<string>("auth_token");
 
           if (storedUser && token) {
-            try {
-              setUser(JSON.parse(storedUser));
-              restoredSession = true;
-            } catch (parseError) {
-              console.error("Error parsing stored user:", parseError);
-            }
+            setUser(storedUser);
+            restoredSession = true;
           }
         }
 
@@ -308,9 +300,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         };
 
         if (data.token || data.accessToken) {
-          localStorage.setItem("auth_token", data.token || data.accessToken);
+          setStorageWithExpiry("auth_token", data.token || data.accessToken);
         }
-        localStorage.setItem("user", JSON.stringify(userData));
+        setStorageWithExpiry("user", userData);
         setUser(userData);
       } else {
         if (!email || !password) {
@@ -328,8 +320,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         };
 
         const mockToken = `mock_token_${Date.now()}`;
-        localStorage.setItem("auth_token", mockToken);
-        localStorage.setItem("user", JSON.stringify(userData));
+        setStorageWithExpiry("auth_token", mockToken);
+        setStorageWithExpiry("user", userData);
         setUser(userData);
       }
     } catch (error: any) {

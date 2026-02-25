@@ -41,14 +41,6 @@ export default function Login() {
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.windowsIdentity?.isAuthenticated) {
-          const windowsUser = data.windowsIdentity;
-          const userData = {
-            username: windowsUser.username,
-            domain: windowsUser.domain,
-            fullName: windowsUser.name,
-          };
-          localStorage.setItem("windows_auth_user", JSON.stringify(userData));
-
           await loginWithWindows();
           navigate("/");
           return;
@@ -67,14 +59,6 @@ export default function Login() {
         if (retryResponse.ok) {
           const data = await retryResponse.json();
           if (data.success && data.windowsIdentity?.isAuthenticated) {
-            const windowsUser = data.windowsIdentity;
-            const userData = {
-              username: windowsUser.username,
-              domain: windowsUser.domain,
-              fullName: windowsUser.name,
-            };
-            localStorage.setItem("windows_auth_user", JSON.stringify(userData));
-
             await loginWithWindows();
             navigate("/");
             return;
