@@ -27,7 +27,7 @@ interface AuthContextType {
   isLoading: boolean;
   hasPermission: (permission: string) => boolean;
   hasRole: (role: string) => boolean;
-  login: (username: string, password: string) => Promise<void>;
+  login: (adminId: string, password: string) => Promise<void>;
   loginWithWindows: (eventId?: string) => Promise<void>;
   checkWhoami: () => Promise<boolean>;
   logout: () => void;
@@ -238,12 +238,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     checkAuth();
   }, []);
 
-  const login = async (username: string, password: string): Promise<void> => {
+  const login = async (adminId: string, password: string): Promise<void> => {
     try {
       setIsLoading(true);
 
-      if (!username || !password) {
-        throw new Error("Username and password are required");
+      if (!adminId || !password) {
+        throw new Error("Admin ID and password are required");
       }
 
       // Manual sign-in via Windows custom-login endpoint
@@ -255,7 +255,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         },
         credentials: "include",
         body: JSON.stringify({
-          username,
+          username: adminId,
           password,
         }),
       });
