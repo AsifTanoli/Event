@@ -9,7 +9,7 @@ const WINDOWS_AUTH_API_BASE =
   import.meta.env.VITE_WINDOWS_AUTH_API_BASE ||
   "https://eventauthapi.gcaa-uae.gov/api/v1/auth/windows";
 
-function Login() {
+export default function Login() {
   const [adminId, setAdminId] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -262,6 +262,3 @@ function Login() {
     </div>
   );
 }
-
-export { Login };
-export default Login;
