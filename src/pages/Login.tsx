@@ -10,7 +10,7 @@ const WINDOWS_AUTH_API_BASE =
   "https://eventauthapi.gcaa-uae.gov/api/v1/auth/windows";
 
 export default function Login() {
-  const [username, setUsername] = useState("");
+  const [adminId, setAdminId] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -86,7 +86,7 @@ export default function Login() {
     setIsSubmitting(true);
 
     try {
-      await login(username, password);
+      await login(adminId, password);
       navigate("/");
     } catch (err: any) {
       setError(err.message || "Login failed. Please check your credentials.");
@@ -100,7 +100,7 @@ export default function Login() {
       <div className="w-full max-w-md">
         {/* Logo/Branding */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4 shadow-lg">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-2xl mb-4 shadow-lg">
             <LogIn className="text-white" size={32} />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">GCAA</h1>
@@ -127,21 +127,50 @@ export default function Login() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Windows Auth Button and Info */}
+          <div className="mt-6 space-y-3">
+            <Button
+              type="button"
+              onClick={handleWindowsAuth}
+              disabled={isAttemptingWindowsAuth || isSubmitting}
+              variant="primary"
+              fullWidth
+            >
+              {isAttemptingWindowsAuth ? (
+                <span className="bg-primary flex items-center justify-center gap-2">
+                  <Loader2 className="animate-spin" size={16} />
+                  Authenticating GCAA Account...
+                </span>
+              ) : (
+                "Sign in with GCAA Account"
+              )}
+            </Button>
+
+            <div className="my-6 flex items-center gap-3">
+              <div className="flex-1 h-px bg-gray-200" />
+              <span className="text-sm text-gray-400">OR</span>
+              <div className="flex-1 h-px bg-gray-200" />
+            </div>
+
+            <p className="text-xs font-medium mb-1">Not on GCAA Network:?</p>
+            <p className="text-xs">Enter below Admin ID and Password provided by IT.</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-5 mt-4">
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
-                Username
+              <label htmlFor="adminId" className="block text-sm font-medium text-gray-700 mb-2">
+                Admin ID
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Mail className="text-gray-400" size={20} />
                 </div>
                 <Input
-                  id="username"
+                  id="adminId"
                   type="text"
-                  value={username}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
-                  placeholder="Enter your username"
+                  value={adminId}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setAdminId(e.target.value)}
+                  placeholder="Enter your ID"
                   required
                   className="pl-10"
                   disabled={isSubmitting || isAttemptingWindowsAuth}
@@ -175,6 +204,7 @@ export default function Login() {
 
             <Button
               type="submit"
+              variant="secondary"
               className="w-full py-3 text-base font-semibold"
               disabled={isSubmitting || isAttemptingWindowsAuth}
             >
@@ -208,33 +238,17 @@ export default function Login() {
             </Button>
           </form>
 
-          {/* Windows Auth Button and Info */}
-          <div className="mt-6 space-y-3">
-            <Button
-              type="button"
-              onClick={handleWindowsAuth}
-              disabled={isAttemptingWindowsAuth || isSubmitting}
-              variant="outline"
-              fullWidth
-            >
-              {isAttemptingWindowsAuth ? (
-                <span className="flex items-center justify-center gap-2">
-                  <Loader2 className="animate-spin" size={16} />
-                  Authenticating with Windows...
-                </span>
-              ) : (
-                "Sign in with Windows"
-              )}
-            </Button>
-
+          <div className="mt-6">
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-xs text-blue-800 font-medium mb-1">Windows Authentication:</p>
+              <p className="text-xs text-blue-800 font-medium mb-1">
+                Sign in with GCAA Account:
+              </p>
               <p className="text-xs text-blue-700">
-                Click "Sign in with Windows" to use your Windows credentials. The browser will
-                automatically show the Windows authentication dialog if needed.
+                Click "Sign in with GCAA Account" to use your Windows credentials. The browser
+                will automatically show the GCAA Account authentication dialog if needed.
               </p>
               <p className="text-xs text-blue-600 mt-1">
-                Or enter your username and password above for manual login.
+                Or enter your Admin ID and password above for manual login.
               </p>
             </div>
           </div>
@@ -242,7 +256,7 @@ export default function Login() {
 
         {/* Footer */}
         <p className="text-center text-sm text-gray-500 mt-6">
-          © 2024 GCAA. All rights reserved.
+          © 2026 GCAA. All rights reserved.
         </p>
       </div>
     </div>
