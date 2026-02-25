@@ -27,7 +27,7 @@ interface AuthContextType {
   isLoading: boolean;
   hasPermission: (permission: string) => boolean;
   hasRole: (role: string) => boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
   loginWithWindows: (eventId?: string) => Promise<void>;
   checkWhoami: () => Promise<boolean>;
   logout: () => void;
@@ -50,6 +50,9 @@ interface AuthProviderProps {
 const WINDOWS_AUTH_API_BASE =
   import.meta.env.VITE_WINDOWS_AUTH_API_BASE ||
   "https://eventauthapi.gcaa-uae.gov/api/v1/auth/windows";
+const WINDOWS_CUSTOM_LOGIN_API =
+  import.meta.env.VITE_WINDOWS_AUTH_CUSTOM_LOGIN_API ||
+  "https://gcaawebapi.gcaa-uae.gov/api/v1/auth/windows/custom-login";
 
 const PUBLIC_ROUTE_PATTERNS = [
   /^\/login$/,
@@ -80,6 +83,47 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const authCheckedRef = useRef(false);
 
+  const applyWindowsAuthPayload = useCallback((data: any): boolean => {
+    if (!data?.success || !data.windowsIdentity?.isAuthenticated) {
+      return false;
+    }
+
+    const windowsUser = data.windowsIdentity;
+    const accessType = data.databaseUser ? "FULL_ACCESS" : "EVENT_ONLY";
+    const rawPermissions = data.databaseUser?.permissions || [];
+    const permissions = parsePermissions(rawPermissions);
+
+    const userData: User = {
+      id: data.databaseUser?.id || windowsUser.username || windowsUser.name,
+      name: data.databaseUser?.fullName || windowsUser.name || windowsUser.username,
+      email: data.databaseUser?.email || windowsUser.email || "",
+      username: windowsUser.username,
+      domain: windowsUser.domain,
+      fullName: data.databaseUser?.fullName || windowsUser.name,
+      role: data.databaseUser?.role || null,
+      permissions,
+      accessType,
+    };
+
+    setUser(userData);
+
+    setStorageWithExpiry("windows_auth_user", {
+      username: windowsUser.username,
+      domain: windowsUser.domain,
+      fullName: data.databaseUser?.fullName || windowsUser.name,
+      accessType,
+      role: data.databaseUser?.role || null,
+      permissions,
+      databaseUser: data.databaseUser || null,
+    });
+
+    if (data.token) {
+      setStorageWithExpiry("windows_auth_token", data.token);
+    }
+
+    return true;
+  }, []);
+
   const checkWhoami = useCallback(async (): Promise<boolean> => {
     try {
       const response = await fetch(`${WINDOWS_AUTH_API_BASE}/whoami`, {
@@ -95,52 +139,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       const data = await response.json();
-      if (!data.success || !data.windowsIdentity?.isAuthenticated) {
-        return false;
-      }
-
-      const windowsUser = data.windowsIdentity;
-      const accessType = data.databaseUser ? "FULL_ACCESS" : "EVENT_ONLY";
-      const rawPermissions = data.databaseUser?.permissions || [];
-      const permissions = parsePermissions(rawPermissions);
-
-      const userData: User = {
-        id: data.databaseUser?.id || windowsUser.username || windowsUser.name,
-        name: data.databaseUser?.fullName || windowsUser.name || windowsUser.username,
-        email: data.databaseUser?.email || windowsUser.email || "",
-        username: windowsUser.username,
-        domain: windowsUser.domain,
-        fullName: data.databaseUser?.fullName || windowsUser.name,
-        role: data.databaseUser?.role || null,
-        permissions,
-        accessType,
-      };
-
-      setUser(userData);
-
-      setStorageWithExpiry(
-        "windows_auth_user",
-        {
-          username: windowsUser.username,
-          domain: windowsUser.domain,
-          fullName: data.databaseUser?.fullName || windowsUser.name,
-          accessType,
-          role: data.databaseUser?.role || null,
-          permissions,
-          databaseUser: data.databaseUser || null,
-        },
-      );
-
-      if (data.token) {
-        setStorageWithExpiry("windows_auth_token", data.token);
-      }
-
-      return true;
+      return applyWindowsAuthPayload(data);
     } catch (error) {
       console.error("Error checking whoami:", error);
       return false;
     }
-  }, []);
+  }, [applyWindowsAuthPayload]);
 
   const loginWithWindows = useCallback(async (_eventId?: string): Promise<void> => {
     try {
@@ -159,44 +163,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       const data = await response.json();
-      if (!data.success || !data.windowsIdentity?.isAuthenticated) {
+      if (!applyWindowsAuthPayload(data)) {
         throw new Error(data.message || "Windows authentication failed");
-      }
-
-      const windowsUser = data.windowsIdentity;
-      const accessType = data.databaseUser ? "FULL_ACCESS" : "EVENT_ONLY";
-      const rawPermissions = data.databaseUser?.permissions || [];
-      const permissions = parsePermissions(rawPermissions);
-
-      const nextUser: User = {
-        id: data.databaseUser?.id || windowsUser.username || windowsUser.name,
-        name: data.databaseUser?.fullName || windowsUser.name || windowsUser.username,
-        email: data.databaseUser?.email || windowsUser.email || "",
-        username: windowsUser.username,
-        domain: windowsUser.domain,
-        fullName: data.databaseUser?.fullName || windowsUser.name,
-        role: data.databaseUser?.role || null,
-        permissions,
-        accessType,
-      };
-
-      setUser(nextUser);
-
-      setStorageWithExpiry(
-        "windows_auth_user",
-        {
-          username: windowsUser.username,
-          domain: windowsUser.domain,
-          fullName: data.databaseUser?.fullName || windowsUser.name,
-          accessType,
-          role: data.databaseUser?.role || null,
-          permissions,
-          databaseUser: data.databaseUser || null,
-        },
-      );
-
-      if (data.token) {
-        setStorageWithExpiry("windows_auth_token", data.token);
       }
     } catch (error: any) {
       console.error("Windows login error:", error);
@@ -204,7 +172,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [applyWindowsAuthPayload]);
 
   useEffect(() => {
     if (authCheckedRef.current) {
@@ -270,59 +238,52 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     checkAuth();
   }, []);
 
-  const login = async (email: string, password: string): Promise<void> => {
+  const login = async (username: string, password: string): Promise<void> => {
     try {
       setIsLoading(true);
 
-      const useAPI = import.meta.env.VITE_USE_API === "true";
+      if (!username || !password) {
+        throw new Error("Username and password are required");
+      }
 
-      if (useAPI) {
-        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
-        const response = await fetch(`${API_BASE_URL}/auth/login`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email, password }),
-        });
+      // Manual sign-in via Windows custom-login endpoint
+      const response = await fetch(WINDOWS_CUSTOM_LOGIN_API, {
+        method: "POST",
+        headers: {
+          accept: "*/*",
+          "Content-Type": "application/json-patch+json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          username,
+          password,
+        }),
+      });
 
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || "Login failed");
+      if (!response.ok) {
+        let message = "Login failed";
+        try {
+          const errorData = await response.json();
+          message = errorData?.message || errorData?.title || message;
+        } catch {
+          // No JSON body
         }
+        throw new Error(message);
+      }
 
-        const data = await response.json();
-        const userData: User = {
-          id: data.user.id || data.user.userId,
-          name: data.user.name || data.user.fullName || email.split("@")[0],
-          email: data.user.email || email,
-          role: data.user.role,
-        };
+      const data = await response.json();
+      if (data.token || data.accessToken) {
+        setStorageWithExpiry("auth_token", data.token || data.accessToken);
+      }
 
-        if (data.token || data.accessToken) {
-          setStorageWithExpiry("auth_token", data.token || data.accessToken);
-        }
-        setStorageWithExpiry("user", userData);
-        setUser(userData);
-      } else {
-        if (!email || !password) {
-          throw new Error("Email and password are required");
-        }
+      // If custom-login returns the same structure as whoami, use it directly.
+      if (applyWindowsAuthPayload(data)) {
+        return;
+      }
 
-        const userData: User = {
-          id: "1",
-          name: email
-            .split("@")[0]
-            .replace(/[._]/g, " ")
-            .replace(/\b\w/g, (l) => l.toUpperCase()),
-          email,
-          role: "admin",
-        };
-
-        const mockToken = `mock_token_${Date.now()}`;
-        setStorageWithExpiry("auth_token", mockToken);
-        setStorageWithExpiry("user", userData);
-        setUser(userData);
+      // Fallback: keep the same user/access/permissions flow as whoami.
+      if (!(await checkWhoami())) {
+        throw new Error(data.message || "Login succeeded but user profile could not be loaded");
       }
     } catch (error: any) {
       throw error;

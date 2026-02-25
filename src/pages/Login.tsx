@@ -10,7 +10,7 @@ const WINDOWS_AUTH_API_BASE =
   "https://eventauthapi.gcaa-uae.gov/api/v1/auth/windows";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -86,7 +86,7 @@ export default function Login() {
     setIsSubmitting(true);
 
     try {
-      await login(email, password);
+      await login(username, password);
       navigate("/");
     } catch (err: any) {
       setError(err.message || "Login failed. Please check your credentials.");
@@ -129,19 +129,19 @@ export default function Login() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+                Username
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Mail className="text-gray-400" size={20} />
                 </div>
                 <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
+                  placeholder="Enter your username"
                   required
                   className="pl-10"
                   disabled={isSubmitting || isAttemptingWindowsAuth}
@@ -234,7 +234,7 @@ export default function Login() {
                 automatically show the Windows authentication dialog if needed.
               </p>
               <p className="text-xs text-blue-600 mt-1">
-                Or enter your email and password above for manual login.
+                Or enter your username and password above for manual login.
               </p>
             </div>
           </div>
