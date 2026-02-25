@@ -23,23 +23,6 @@ export default function Login() {
     return <Navigate to="/" replace />;
   }
 
-  // Only show loading while auth context is initializing
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4 shadow-lg animate-pulse">
-            <LogIn className="text-white" size={32} />
-          </div>
-          <p className="text-gray-600">Loading...</p>
-          <div className="mt-4 flex justify-center">
-            <Loader2 className="animate-spin text-blue-600" size={24} />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   const handleWindowsAuth = async () => {
     setIsAttemptingWindowsAuth(true);
     setError("");
@@ -145,6 +128,13 @@ export default function Login() {
           <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">
             Sign In
           </h2>
+
+          {isLoading && (
+            <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center gap-2">
+              <Loader2 className="animate-spin text-gray-500" size={16} />
+              <p className="text-xs text-gray-600">Checking your session...</p>
+            </div>
+          )}
 
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
