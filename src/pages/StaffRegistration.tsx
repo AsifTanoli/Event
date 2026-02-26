@@ -443,8 +443,8 @@ export default function StaffRegistration() {
 
   const allowedMethods = parseAllowedMethods(finalSchema.allowedRegistrationMethods);
 
-  // Filter out MANUAL_OTP from displayed methods (it will be auto-selected)
-  const displayableMethods = allowedMethods.filter((m) => m !== "MANUAL_OTP");
+  // Show all configured registration methods, including MANUAL_OTP
+  const displayableMethods = allowedMethods;
 
   // Auto-select MANUAL_OTP if it's in allowedMethods and no method is selected yet
   useEffect(() => {
@@ -1813,7 +1813,7 @@ export default function StaffRegistration() {
             </div>
           </div>
 
-          {/* Registration Method Selection - Only show if there are methods other than MANUAL_OTP */}
+          {/* Registration Method Selection */}
           {displayableMethods.length > 0 && (
             <div className="border-b border-gray-200 pb-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Registration Method</h2>
@@ -1857,8 +1857,26 @@ export default function StaffRegistration() {
                     <p className="text-xs text-gray-600">Auto-fill details</p>
                   </button>
                 )}
+
+                {/* Manual OTP */}
+                {allowedMethods.includes("MANUAL_OTP") && (
+                  <button
+                    onClick={() => handleMethodSelect("MANUAL_OTP")}
+                    className={`p-4 rounded-lg border-2 transition-all text-center ${
+                      selectedMethod === "MANUAL_OTP"
+                        ? "border-emerald-500 bg-emerald-50"
+                        : "border-gray-200 hover:border-emerald-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    <div className="p-3 bg-emerald-100 rounded-full w-12 h-12 mx-auto mb-3 flex items-center justify-center">
+                      <Mail size={24} className="text-emerald-600" />
+                    </div>
+                    <h3 className="font-semibold text-gray-900 mb-1 text-sm">Manual</h3>
+                    <p className="text-xs text-gray-600">Verify with OTP</p>
+                  </button>
+                )}
               </div>
-              {selectedMethod && selectedMethod !== "MANUAL_OTP" && (
+              {selectedMethod && (
                 <p className="text-xs text-gray-500 mt-3 text-center">Click the selected method again to deselect</p>
               )}
             </div>
