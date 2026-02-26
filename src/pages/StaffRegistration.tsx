@@ -454,6 +454,10 @@ export default function StaffRegistration() {
     () => allowedMethods.length === 1 && allowedMethods[0] === "UAE_PASS",
     [allowedMethods]
   );
+  const isManualOnlyMethod = useMemo(
+    () => allowedMethods.length === 1 && allowedMethods[0] === "MANUAL_OTP",
+    [allowedMethods]
+  );
   const shouldShowRegistrationForm = !isUaePassOnlyMethod || uaePassDataLoaded;
 
   // Auto-select MANUAL_OTP once when methods are loaded/changed.
@@ -1833,7 +1837,7 @@ export default function StaffRegistration() {
           </div>
 
           {/* Registration Method Selection */}
-          {displayableMethods.length > 0 && (
+          {displayableMethods.length > 0 && !isManualOnlyMethod && (
             <div className="border-b border-gray-200 pb-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Registration Method</h2>
               <div
