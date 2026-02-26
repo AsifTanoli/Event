@@ -14,7 +14,7 @@ import Button from "../components/Button";
 import Input from "../components/Input";
 import Modal from "../components/Modal";
 import PageLoader from "../components/PageLoader";
-import { Smartphone, Mail, CreditCard, CheckCircle2, Loader2, XCircle, AlertTriangle } from "lucide-react";
+import { Mail, CreditCard, CheckCircle2, Loader2, XCircle, AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "../components/Card";
 import { useEventServices } from "../presentation/context/EventServiceContext";
 import { useAuth } from "../presentation/context/AuthContext";
@@ -1832,11 +1832,10 @@ export default function StaffRegistration() {
                         : "border-gray-200 hover:border-purple-300 hover:bg-gray-50"
                     }`}
                   >
-                    <div className="p-3 bg-purple-100 rounded-full w-12 h-12 mx-auto mb-3 flex items-center justify-center">
-                      <Smartphone size={24} className="text-purple-600" />
+                    <div className="p-3 mx-auto mb-3 flex items-center justify-center">
+                      <img src="/images/EN_UAEPASS_Login_Btn.svg" alt="UAE PASS" className="object-contain" />
                     </div>
-                    <h3 className="font-semibold text-gray-900 mb-1 text-sm">UAE PASS</h3>
-                    <p className="text-xs text-gray-600">Quick login</p>
+                    <p className="text-xs text-gray-600">Auto fetch user information</p>
                   </button>
                 )}
 
