@@ -49,6 +49,7 @@ interface AuthProviderProps {
 const WINDOWS_AUTH_API_BASE =
   import.meta.env.VITE_WINDOWS_AUTH_API_BASE ||
   "https://eventauthapi.gcaa-uae.gov/api/v1/auth/windows";
+const POST_LOGIN_REDIRECT_KEY = "post_login_redirect";
 
 const normalizePath = (path: string): string => {
   const normalized = decodeURIComponent(path || "/")
@@ -88,6 +89,56 @@ const isStaffRegistrationRoute = (path: string): boolean => {
 const isPublicRoute = (path: string): boolean => {
   const normalized = normalizePath(path);
   return PUBLIC_ROUTE_PATTERNS.some((pattern) => pattern.test(normalized)) || isStaffRegistrationRoute(normalized);
+};
+
+const sanitizeInternalReturnPath = (value: string | null | undefined): string | null => {
+  if (!value) return null;
+  try {
+    const decoded = decodeURIComponent(value);
+    if (!decoded.startsWith("/") || decoded.startsWith("//")) {
+      return null;
+    }
+    return decoded;
+  } catch {
+    return null;
+  }
+};
+
+const redirectToLoginWithReturnTo = () => {
+  if (typeof window === "undefined") return;
+
+  const returnTo = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  try {
+    sessionStorage.setItem(POST_LOGIN_REDIRECT_KEY, returnTo);
+  } catch {
+    // Ignore storage failures; query parameter still carries the redirect target.
+  }
+
+  const params = new URLSearchParams({ returnTo });
+  window.location.replace(`/login?${params.toString()}`);
+};
+
+export const getPostLoginRedirectTarget = (): string => {
+  if (typeof window === "undefined") return "/";
+
+  const fromQuery = sanitizeInternalReturnPath(
+    new URLSearchParams(window.location.search).get("returnTo")
+  );
+
+  let fromStorage: string | null = null;
+  try {
+    fromStorage = sanitizeInternalReturnPath(sessionStorage.getItem(POST_LOGIN_REDIRECT_KEY));
+  } catch {
+    fromStorage = null;
+  }
+
+  try {
+    sessionStorage.removeItem(POST_LOGIN_REDIRECT_KEY);
+  } catch {
+    // Ignore storage cleanup errors.
+  }
+
+  return fromQuery || fromStorage || "/";
 };
 
 const parsePermissions = (permissions: string | string[] | undefined): string[] => {
@@ -290,7 +341,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (!restoredSession && !isPublicRoute(currentPath)) {
           // Important: do not call /whoami here, because that can trigger the
           // browser's Windows auth challenge before the user clicks the button.
-          window.location.replace("/login");
+          redirectToLoginWithReturnTo();
         }
       } catch (error) {
         console.error("Error checking auth:", error);
@@ -398,6 +449,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem("user");
     localStorage.removeItem("windows_auth_token");
     localStorage.removeItem("windows_auth_user");
+    try {
+      sessionStorage.removeItem(POST_LOGIN_REDIRECT_KEY);
+    } catch {
+      // Ignore storage cleanup errors.
+    }
     setUser(null);
   };
 
