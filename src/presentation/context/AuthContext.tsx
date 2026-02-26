@@ -57,13 +57,10 @@ const PUBLIC_ROUTE_PATTERNS = [
   /^\/self-check-in-by-registration\/?$/,
   /^\/event\/[^/]+\/register\/?$/,
   /^\/event\/[^/]+\/check-in\/?$/,
-  // Keep staff registration on the same page and let it trigger Windows auth popup there.
-  /^\/staff-register\/?$/,
-  /^\/staf-register\/?$/,
-  /^\/staff-registration\/?$/,
-  /^\/event\/[^/]+\/staff-register\/?$/,
-  /^\/event\/[^/]+\/staf-register\/?$/,
-  /^\/event\/[^/]+\/staff-registration\/?$/
+  // Keep staff registration on the same page and let it trigger Windows auth there.
+  // Support common route variants and spelling variants used in existing links.
+  /^\/(?:staf|staff)(?:-?register|-?registration|-?registeration|register|registration|registeration)\/?$/,
+  /^\/event\/[^/]+\/(?:staf|staff)(?:-?register|-?registration|-?registeration|register|registration|registeration)\/?$/
 ];
 
 const isPublicRoute = (path: string): boolean =>
