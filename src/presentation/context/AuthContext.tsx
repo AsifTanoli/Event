@@ -50,6 +50,13 @@ const WINDOWS_AUTH_API_BASE =
   import.meta.env.VITE_WINDOWS_AUTH_API_BASE ||
   "https://eventauthapi.gcaa-uae.gov/api/v1/auth/windows";
 
+const normalizePath = (path: string): string => {
+  const normalized = decodeURIComponent(path || "/")
+    .toLowerCase()
+    .replace(/\/+$/, "");
+  return normalized || "/";
+};
+
 const PUBLIC_ROUTE_PATTERNS = [
   /^\/login\/?$/,
   /^\/register\/?$/,
@@ -63,8 +70,25 @@ const PUBLIC_ROUTE_PATTERNS = [
   /^\/event\/[^/]+\/(?:staf|staff)(?:-?register|-?registration|-?registeration|register|registration|registeration)\/?$/
 ];
 
-const isPublicRoute = (path: string): boolean =>
-  PUBLIC_ROUTE_PATTERNS.some((pattern) => pattern.test(path));
+const isStaffRegistrationRoute = (path: string): boolean => {
+  const p = normalizePath(path);
+
+  if (
+    p === "/staff-register" ||
+    p === "/staf-register" ||
+    p === "/staff-registration" ||
+    p === "/staffregisteration"
+  ) {
+    return true;
+  }
+
+  return /^\/event\/[^/]+\/(?:staf|staff)(?:-?register|-?registration|-?registeration|register|registration|registeration)$/.test(p);
+};
+
+const isPublicRoute = (path: string): boolean => {
+  const normalized = normalizePath(path);
+  return PUBLIC_ROUTE_PATTERNS.some((pattern) => pattern.test(normalized)) || isStaffRegistrationRoute(normalized);
+};
 
 const parsePermissions = (permissions: string | string[] | undefined): string[] => {
   if (!permissions) return [];
@@ -262,7 +286,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }
         }
 
-        const currentPath = window.location.pathname.replace(/\/+$/, "") || "/";
+        const currentPath = normalizePath(window.location.pathname);
         if (!restoredSession && !isPublicRoute(currentPath)) {
           // Important: do not call /whoami here, because that can trigger the
           // browser's Windows auth challenge before the user clicks the button.
