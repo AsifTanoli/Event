@@ -441,10 +441,20 @@ export default function StaffRegistration() {
       .filter((m) => m === "UAE_PASS" || m === "EMIRATES_ID" || m === "MANUAL_OTP") as RegistrationMethod[];
   };
 
-  const allowedMethods = parseAllowedMethods(finalSchema.allowedRegistrationMethods);
+  const allowedMethods = useMemo(
+    () => parseAllowedMethods(finalSchema.allowedRegistrationMethods),
+    [finalSchema.allowedRegistrationMethods]
+  );
 
   // Show all configured registration methods, including MANUAL_OTP
   const displayableMethods = allowedMethods;
+
+  // Auto-select MANUAL_OTP once when methods are loaded/changed.
+  // Using functional state update prevents re-select loops when user manually deselects.
+  useEffect(() => {
+    if (!allowedMethods.includes("MANUAL_OTP")) return;
+    setSelectedMethod((prev) => prev ?? "MANUAL_OTP");
+  }, [allowedMethods]);
 
   // Memoize merged fields to prevent unnecessary re-renders in DynamicForm
   const merged: Field[] = useMemo(() => {
