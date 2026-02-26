@@ -340,6 +340,12 @@ export default function StaffRegistration() {
     const checkStaffAuth = async () => {
       if (!routeEventId || authChecked) return;
 
+      // Already authenticated in AuthContext; do not trigger additional Windows auth checks/popups.
+      if (isAuthenticated || user) {
+        setAuthChecked(true);
+        return;
+      }
+
       try {
         // First check if already authenticated via whoami
         const isAuth = await checkWhoami();
@@ -385,7 +391,7 @@ export default function StaffRegistration() {
     if (routeEventId && !authChecked) {
       checkStaffAuth();
     }
-  }, [routeEventId, authChecked, checkWhoami, loginWithWindows]);
+  }, [routeEventId, authChecked, isAuthenticated, user, checkWhoami, loginWithWindows]);
 
   // Cleanup sessionStorage on component unmount or when eventId changes
   useEffect(() => {
