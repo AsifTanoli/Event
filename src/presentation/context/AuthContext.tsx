@@ -61,6 +61,9 @@ const PUBLIC_ROUTE_PATTERNS = [
   /^\/self-check-in-by-registration$/,
   /^\/event\/[^/]+\/register$/,
   /^\/event\/[^/]+\/check-in$/,
+  // Keep staff registration on the same page and let it trigger Windows auth popup there.
+  /^\/event\/[^/]+\/staff-register$/,
+  /^\/event\/[^/]+\/staff-registration$/,
 ];
 
 const isPublicRoute = (path: string): boolean =>
