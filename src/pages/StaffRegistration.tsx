@@ -446,13 +446,6 @@ export default function StaffRegistration() {
   // Show all configured registration methods, including MANUAL_OTP
   const displayableMethods = allowedMethods;
 
-  // Auto-select MANUAL_OTP if it's in allowedMethods and no method is selected yet
-  useEffect(() => {
-    if (allowedMethods.includes("MANUAL_OTP") && selectedMethod === null) {
-      setSelectedMethod("MANUAL_OTP");
-    }
-  }, [allowedMethods, selectedMethod]);
-
   // Memoize merged fields to prevent unnecessary re-renders in DynamicForm
   const merged: Field[] = useMemo(() => {
     return finalSchema.fields
