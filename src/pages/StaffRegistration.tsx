@@ -58,6 +58,8 @@ export default function StaffRegistration() {
   const [registrationResponse, setRegistrationResponse] = useState<RegistrationResponse | null>(null);
   const [formValues, setFormValues] = useState<FormValues>({});
   const [imageLoadError, setImageLoadError] = useState<boolean>(false);
+  const [uaePassDataLoaded, setUaePassDataLoaded] = useState(false);
+  const [loadingUaePassData, setLoadingUaePassData] = useState(false);
   const uaePassCallbackProcessed = useRef(false); // Track if UAE PASS callback has been processed
   const servicesRef = useRef(services); // Store services in ref to break dependency cycles
   const schemaLoadingRef = useRef(false); // Track if schema is currently loading to prevent multiple loads
@@ -448,6 +450,11 @@ export default function StaffRegistration() {
 
   // Show all configured registration methods, including MANUAL_OTP
   const displayableMethods = allowedMethods;
+  const isUaePassOnlyMethod = useMemo(
+    () => allowedMethods.length === 1 && allowedMethods[0] === "UAE_PASS",
+    [allowedMethods]
+  );
+  const shouldShowRegistrationForm = !isUaePassOnlyMethod || uaePassDataLoaded;
 
   // Auto-select MANUAL_OTP once when methods are loaded/changed.
   // Using functional state update prevents re-select loops when user manually deselects.
@@ -1168,6 +1175,8 @@ export default function StaffRegistration() {
   // Reset callback processed flag when eventId changes
   useEffect(() => {
     uaePassCallbackProcessed.current = false;
+    setUaePassDataLoaded(false);
+    setLoadingUaePassData(false);
   }, [routeEventId]);
 
   // Handle UAE PASS callback (after redirect back)
@@ -1194,6 +1203,8 @@ export default function StaffRegistration() {
       }
 
       setSubmissionError(null);
+      setLoadingUaePassData(true);
+      setUaePassDataLoaded(false);
 
       try {
         const response = await servicesRef.current.uaePassCallbackUseCase.execute(attendeeId);
@@ -1213,16 +1224,21 @@ export default function StaffRegistration() {
 
           setSelectedMethod("UAE_PASS");
           setOtpVerified(true); // Skip OTP for UAE PASS
+          setUaePassDataLoaded(true);
 
           // Clean URL by removing query parameters
           window.history.replaceState({}, document.title, window.location.pathname);
         } else {
+          setUaePassDataLoaded(false);
           setSubmissionError("UAE PASS authentication failed");
           uaePassCallbackProcessed.current = false; // Reset on failure so user can retry
         }
       } catch (error: any) {
+        setUaePassDataLoaded(false);
         setSubmissionError(error.message || "UAE PASS authentication failed. Please try again.");
         uaePassCallbackProcessed.current = false; // Reset on error so user can retry
+      } finally {
+        setLoadingUaePassData(false);
       }
     };
 
@@ -1937,43 +1953,64 @@ export default function StaffRegistration() {
           )}
 
           {/* Registration Form */}
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-3">Registration Details</h2>
+          {shouldShowRegistrationForm ? (
+            <div className="space-y-4">
+              <h2 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-3">Registration Details</h2>
 
-            {/* Always show the form and submit button - submit button handles OTP flow internally */}
-            <DynamicForm
-              fields={merged}
-              values={formValues}
-              onValuesChange={setFormValues}
-              showSubmit={true}
-              submitLabel={
-                submitting ? (otpLoading ? "Sending OTP..." : verifyingOTP ? "Verifying OTP..." : "Submitting...") : "Submit Registration"
-              }
-              onSubmit={handleSubmit}
-              submitting={submitting}
-            />
+              {/* Always show the form and submit button - submit button handles OTP flow internally */}
+              <DynamicForm
+                fields={merged}
+                values={formValues}
+                onValuesChange={setFormValues}
+                showSubmit={true}
+                submitLabel={
+                  submitting ? (otpLoading ? "Sending OTP..." : verifyingOTP ? "Verifying OTP..." : "Submitting...") : "Submit Registration"
+                }
+                onSubmit={handleSubmit}
+                submitting={submitting}
+              />
 
-            {/* Show message if Emirates ID method selected but not verified */}
-            {selectedMethod === "EMIRATES_ID" && !emiratesId.trim() && (
-              <div className="text-center py-4 text-amber-600 bg-amber-50 border border-amber-200 rounded-lg">
-                <p className="text-sm">Please enter and verify your Emirates ID above to submit registration</p>
+              {/* Show message if Emirates ID method selected but not verified */}
+              {selectedMethod === "EMIRATES_ID" && !emiratesId.trim() && (
+                <div className="text-center py-4 text-amber-600 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-sm">Please enter and verify your Emirates ID above to submit registration</p>
+                </div>
+              )}
+
+              {/* Display submission errors */}
+              {submissionError && (
+                <div
+                  className={`text-center py-4 ${
+                    (() => {
+                      const errorInfo = parseErrorInfo(submissionError);
+                      return errorInfo.bgColor + " " + errorInfo.textColor + " border";
+                    })()
+                  } rounded-lg`}
+                >
+                  <p className="text-sm font-medium">{parseErrorInfo(submissionError).message}</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <h2 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-3">Registration Details</h2>
+              <div className="rounded-lg border border-purple-200 bg-purple-50 p-5 text-center">
+                {loadingUaePassData ? (
+                  <div className="flex flex-col items-center gap-2 text-purple-700">
+                    <Loader2 size={20} className="animate-spin" />
+                    <p className="text-sm font-medium">Loading your UAE PASS details...</p>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-sm font-medium text-purple-800">Continue with UAE PASS to load your details.</p>
+                    <p className="text-xs text-purple-700 mt-1">
+                      The registration form will appear after your attendee data is returned successfully.
+                    </p>
+                  </>
+                )}
               </div>
-            )}
-
-            {/* Display submission errors */}
-            {submissionError && (
-              <div
-                className={`text-center py-4 ${
-                  (() => {
-                    const errorInfo = parseErrorInfo(submissionError);
-                    return errorInfo.bgColor + " " + errorInfo.textColor + " border";
-                  })()
-                } rounded-lg`}
-              >
-                <p className="text-sm font-medium">{parseErrorInfo(submissionError).message}</p>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Loader Overlay - Shows when loadingSchema is true */}
