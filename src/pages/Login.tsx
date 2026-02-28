@@ -1,5 +1,5 @@
 import { useState, FormEvent, ChangeEvent } from "react";
-import { useNavigate, Navigate } from "react-router-dom";
+import { useNavigate, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../presentation/context/AuthContext";
 import Button from "../components/Button";
 import Input from "../components/Input";
@@ -17,6 +17,8 @@ export default function Login() {
   const [isAttemptingWindowsAuth, setIsAttemptingWindowsAuth] = useState(false);
   const { login, loginWithWindows, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from?.pathname || "/";
 
   // Wait for auth bootstrap to finish before showing the login form.
   if (isLoading) {
@@ -32,7 +34,7 @@ export default function Login() {
 
   // Redirect if already authenticated
   if (isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={from} replace />;
   }
 
   const handleWindowsAuth = async () => {
@@ -54,7 +56,7 @@ export default function Login() {
         const data = await response.json();
         if (data.success && data.windowsIdentity?.isAuthenticated) {
           await loginWithWindows();
-          navigate("/", { replace: true });
+          navigate(from, { replace: true });
           return;
         }
       } else if (response.status === 401) {
@@ -72,7 +74,7 @@ export default function Login() {
           const data = await retryResponse.json();
           if (data.success && data.windowsIdentity?.isAuthenticated) {
             await loginWithWindows();
-            navigate("/", { replace: true });
+            navigate(from, { replace: true });
             return;
           }
         } else {
@@ -99,7 +101,7 @@ export default function Login() {
 
     try {
       await login(adminId, password);
-      navigate("/", { replace: true });
+      navigate(from, { replace: true });
     } catch (err: any) {
       setError(err.message || "Login failed. Please check your credentials.");
     } finally {
