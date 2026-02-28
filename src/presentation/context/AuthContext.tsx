@@ -221,7 +221,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }
         }
 
-        const currentPath = window.location.pathname;
+        const currentPath = window.location.pathname.replace(/\/+$/, "") || "/";
         if (!restoredSession && !isPublicRoute(currentPath)) {
           // Important: do not call /whoami here, because that can trigger the
           // browser's Windows auth challenge before the user clicks the button.
@@ -275,16 +275,46 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       const data = await response.json();
-      if (data.token || data.accessToken) {
-        setStorageWithExpiry("auth_token", data.token || data.accessToken);
+      const issuedToken = data.token || data.accessToken;
+      if (issuedToken) {
+        setStorageWithExpiry("auth_token", issuedToken);
+        setStorageWithExpiry("windows_auth_token", issuedToken);
       }
 
-      // If custom-login returns the same structure as whoami, use it directly.
+      // Custom-login may return user data directly (no windowsIdentity).
+      const customLoginUser = data?.data?.user || data?.user || null;
+      if (customLoginUser) {
+        const permissions = parsePermissions(customLoginUser.permissions || []);
+        const mappedUser: User = {
+          id: customLoginUser.id || customLoginUser.userId || adminId,
+          name: customLoginUser.fullName || customLoginUser.name || adminId,
+          email: customLoginUser.email || "",
+          username:
+            customLoginUser.username ||
+            customLoginUser.userName ||
+            customLoginUser.name ||
+            adminId,
+          fullName: customLoginUser.fullName || customLoginUser.name || adminId,
+          role: customLoginUser.role ?? null,
+          permissions,
+          accessType: "FULL_ACCESS",
+        };
+
+        setUser(mappedUser);
+        setStorageWithExpiry("user", mappedUser);
+        setStorageWithExpiry("windows_auth_user", {
+          ...mappedUser,
+          databaseUser: customLoginUser,
+        });
+        return;
+      }
+
+      // If custom-login returns whoami-like payload, apply it.
       if (applyWindowsAuthPayload(data)) {
         return;
       }
 
-      // Fallback: keep the same user/access/permissions flow as whoami.
+      // Final fallback: keep the same user/access/permissions flow as whoami.
       if (!(await checkWhoami())) {
         throw new Error(data.message || "Login succeeded but user profile could not be loaded");
       }
