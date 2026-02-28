@@ -18,6 +18,18 @@ export default function Login() {
   const { login, loginWithWindows, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
 
+  // Wait for auth bootstrap to finish before showing the login form.
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="animate-spin text-gray-500 mx-auto" size={24} />
+          <p className="text-xs text-gray-600 mt-2">Checking your session...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Redirect if already authenticated
   if (isAuthenticated) {
     return <Navigate to="/" replace />;
@@ -42,7 +54,7 @@ export default function Login() {
         const data = await response.json();
         if (data.success && data.windowsIdentity?.isAuthenticated) {
           await loginWithWindows();
-          navigate("/");
+          navigate("/", { replace: true });
           return;
         }
       } else if (response.status === 401) {
@@ -60,7 +72,7 @@ export default function Login() {
           const data = await retryResponse.json();
           if (data.success && data.windowsIdentity?.isAuthenticated) {
             await loginWithWindows();
-            navigate("/");
+            navigate("/", { replace: true });
             return;
           }
         } else {
@@ -87,7 +99,7 @@ export default function Login() {
 
     try {
       await login(adminId, password);
-      navigate("/");
+      navigate("/", { replace: true });
     } catch (err: any) {
       setError(err.message || "Login failed. Please check your credentials.");
     } finally {
@@ -112,13 +124,6 @@ export default function Login() {
           <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">
             Sign In
           </h2>
-
-          {isLoading && (
-            <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center gap-2">
-              <Loader2 className="animate-spin text-gray-500" size={16} />
-              <p className="text-xs text-gray-600">Checking your session...</p>
-            </div>
-          )}
 
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
